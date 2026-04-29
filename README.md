@@ -18,3 +18,14 @@ View your app in AI Studio: https://ai.studio/apps/b6d75f14-82a3-4f7e-b0a2-b71ba
 2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
 3. Run the app:
    `npm run dev`
+
+## Deploy to GitHub Pages
+
+This app is configured to automatically deploy to GitHub Pages!
+
+To set this up, follow these steps:
+1. Go to your GitHub repository -> **Settings** -> **Secrets and variables** -> **Actions**
+2. Click **New repository secret**
+3. Set the Name to `GEMINI_API_KEY` and the Value to your actual API key
+4. Push your code! The app will automatically build and deploy via the included GitHub Action.
+5. Make sure in **Settings -> Pages** that the build source is set to "GitHub Actions".
