@@ -1,0 +1,60 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Global Helpers
+    function isSignedIn() { return request.auth != null; }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    function isOwner(ownerId) { return request.auth.uid == ownerId; }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+
+    // Patient Validation
+    function isValidPatient(data) {
+        return data.patient_name is string && data.patient_name.size() > 0 && data.patient_name.size() <= 100
+            && data.age is number && data.age >= 0 && data.age <= 150
+            && data.ownerId is string && data.status is string;
+    }
+
+    // Default Deny
+    match /{document=**} { allow read, write: if false; }
+
+    // Patients
+    match /patients/{patientId} {
+        allow get: if isSignedIn() && isOwner(existing().ownerId);
+        allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+        allow create: if isSignedIn() && isValidPatient(incoming())
+                      && incoming().ownerId == request.auth.uid
+                      && incoming().created_at == request.time;
+        allow update: if isSignedIn() && isOwner(existing().ownerId)
+                      && isValidPatient(incoming())
+                      && incoming().ownerId == existing().ownerId
+                      && incoming().updated_at == request.time;
+        allow delete: if isSignedIn() && isOwner(existing().ownerId);
+    }
+
+    // Prescriptions
+    match /prescriptions/{prescriptionId} {
+        allow get: if isSignedIn() && isOwner(existing().ownerId);
+        allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+        allow create: if isSignedIn() && incoming().ownerId == request.auth.uid
+                      && incoming().date == request.time;
+        allow update: if isSignedIn() && isOwner(existing().ownerId)
+                      && incoming().ownerId == existing().ownerId
+                      && incoming().date == existing().date; // Immutable date
+        allow delete: if isSignedIn() && isOwner(existing().ownerId);
+    }
+
+    // Invoices
+    match /invoices/{invoiceId} {
+        allow get: if isSignedIn() && isOwner(existing().ownerId);
+        allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+        allow create: if isSignedIn() && incoming().ownerId == request.auth.uid
+                      && incoming().date == request.time;
+        allow update: if isSignedIn() && isOwner(existing().ownerId)
+                      && incoming().ownerId == existing().ownerId
+                      && incoming().date == existing().date; // Immutable date
+        allow delete: if isSignedIn() && isOwner(existing().ownerId);
+    }
+  }
+}
